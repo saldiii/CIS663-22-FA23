@@ -1,0 +1,291 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+
+---
+title: "Are incarceration rates in the United States impacted by inflation and/or unemployment rates?"
+author: "Sal J Denova III, M00351673"
+date: "12/2/2023"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+library(dplyr)
+library(knitr)
+library(formattable)
+library(ggplot2)
+library(tidyr)
+library(lubridate)
+
+  
+```
+
+## Abstract
+
+The United States incarcerates more of its citizens, per capita, than any other country in the world. These prisons and county jails place a significant burden on the tax payers in terms of cost per inmate. For violent offenses such as murder or armed robbery, the cost per inmate increases significantly given the length of the prison terms for these crimes. For crime victims, there is some solstice in the fact that offenders in the United States will face a justice system levying some of the most severe prison terms in the world. There are many politicians and law enforcement leaders who are exploring cause and effect relationships with the hope to create laws or policies that would reduce the overall prison populations.
+
+One such connection that will be explored as part of this research is the impact of inflation on incarceration rates across the US. If this research is able to draw a significant correlation between inflation and incarceration rates, perhaps leaders can implement policies accordingly to reduce inflation. Accordingly, the cost of crime victim impact, prosecution through US court systems and ultimately the cost of inmate incarceration will need to be a factor when evaluation anti-inflation policies.
+
+While there are multiple variables that influence unemployment rates in the United States, it is known that increased interest rates to leverage inflation lead to higher unemployment.   Most politicians as well as the Federal Reserve understand the impact of these mitigating actions.  This research will also seek to analyze the impact of unemployment rates on prison populations.
+
+
+## Introduction
+
+There are several variables that one can consider when performing analysis on incarceration rates.  For example, many are interested in understanding recidivism and its impacts; others may want to analyze total prison populations.    In this research we choose to analyze the number of prison admissions across a period of 10 years:  2013 through 2022.  
+
+The analysis will be comprised of determining the correlation of prison admissions to 1) US unemployment and 2) inflation as measured by Cunsumer Pricing Index (CPI).
+
+Table 1 below provides a high level overview of the average of our variables to provide a feel for the data.  We will of course perform our analysis against a more granular data set with specific monthly and annual data points. 
+
+```{r echo=FALSE}
+
+#Average Prison Population and Inflation
+#Loading each separately and then combining into a Data.Frame
+  year <- c(2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022)
+  avg_prison_pop <- c(30379,30419,30179,29387,28990,28675,28244,27611,23315,23043 )
+  avg_admissions <- c(874,883,622,683,965,976,1035,570,750,781)
+  avg_inflation_cpi <-c(232.95,236.72,237.00,240.00,235.12,251.10,255.65,258.85,270.97,290.64)
+  avg_unemployment <-c(7.36,6.16, 5.28, 4.88, 4.35, 3.89, 3.68, 8.09, 5.37, 3.64)
+  
+  #Data.Frame for Average Prison Population and Inflation
+  tbi <- data.frame(year, avg_prison_pop, avg_admissions, avg_inflation_cpi, avg_unemployment)
+  
+  #column names
+  Titles <- c('Year',	'Avg Prison Population',	'Avg Prison Admissions', 'Avg Inflation (CPI)', 'Avg Unemployment')
+  colnames(tbi) <- Titles
+  
+  kable(tbi, caption = "Table 1: Sample Average Population, Admissions, Inflation rates, and Unemployment")
+
+```
+
+## Literature Review
+
+Inflation, which is defined as increased cost of consumer products such as milk or eggs, has been a major topic on the political scene since COVID-19.  The US and world have shown record year over year increases in consumer pricing index; often the standard measure of inflation.  In an article in The Hill, Howard Henderson points out that inflation growth often “impacts low-income families more severely” (Howard, 2022).  Henderson goes on to surmise that inflation also creates an uptick in violent crimes such as robbery, property crimes and murder.  More notably, in his article, he denotes that there was an increase of 4.2% in the first half of 2022. 
+
+Policy makers need to analyze and include the costs of these crimes when assessing policy decisions in regards to inflation.  Congress and the Federal Reserve in general need to monitor consumer pricing indexes and     take the relevant actions necessary to stop inflationary growth with a sense of urgency.  Perhaps providing concrete analysis against impact of inflation on incarcerations and total associated costs will shed some light on the importance and urgency required for anti-inflationary policy decisions. 
+
+## Theory
+
+If US inflation rates impact incarceration, the following hypothesis is expected to be true:
+
+H1: Higher (or increasing) inflation rates will cause corresponding incarceration rates in the United States in comparison to periods of lower (or decreasing) inflation rates.
+
+As a second area of analysis, we will analyze US Unemployment rates impact on incarceration rates.  If there is a correlation, the below hypothesis is expected to be true:
+
+H2:  Higher (or increasing) unemployment rates will cause corresponding incarceration rates in the United States in comparison to periods of lower (or decreasing) unemployment rates.
+
+
+## Data
+
+The data will be provided from two individual datasets found on Kaggle.com.  Prison population in the US dataset was published in June of 2023 by Konrad Banachewicz.  This dataset contains information related to incarceration intakes and releases as well as total US prison populations from December 1999 through August 2022.  The variables contained within the datasets will allow for comparison of US CPI, incarceration levels as well as incarceration intakes and releases.
+
+The data includes:
+
+```{r echo=FALSE}
+srcdir <- "/Users/airfruity/Library/CloudStorage/OneDrive-murraystate.edu/CIS663-22-FA23/TermProject/Source"
+  setwd(srcdir)
+  getwd()
+  
+#load admissions data from csv's into data frames (NOTE: this is STATE based data/granularity)
+  admissions.file <- "admissions_releases_states.csv"
+  
+  #Load data using local working dir to dataframe
+  admissions.data <- read.table(admissions.file, header=TRUE, sep=",")
+
+```
+
+The second dataset from Kaggle.com is entitled US Inflation Dataset by Pavan Narne.  It contains the running consumer pricing index (CPI) for the US for each month from December 1946 through May 2023.  
+
+```{r echo=FALSE}
+srcdir <- "/Users/airfruity/Library/CloudStorage/OneDrive-murraystate.edu/CIS663-22-FA23/TermProject/Source"
+  setwd(srcdir)
+  getwd()
+#load inflation data from csv's into data frames (NOTE: this is US based data)
+inflation.file <- "US_inflation_rates.csv"
+
+#Load data using local working dir to dataframe
+inflation.data <- read.table(inflation.file, header=TRUE, sep=",")
+
+```
+
+As part of continuing analysis, a third dataset has from the US Bureau of Labor Statistics.  This dataset contains US civilian unemployment rates for each month from 2003 until October of 2023.
+
+```{r echo=FALSE}
+srcdir <- "/Users/airfruity/Library/CloudStorage/OneDrive-murraystate.edu/CIS663-22-FA23/TermProject/Source"
+  setwd(srcdir)
+  getwd()
+#load employment data from csv into data frame (NOTE: this is US based data)
+unemployment.file <- "US_unemployment_rates.csv"
+#Load data using local working dir to dataframe
+unemployment.data <- read.table(unemployment.file, header=TRUE, sep=",")
+
+```
+In order to ensure consistent data types, we take this opportunity to convert all date fields from character to date data type.
+
+```{r, echo = TRUE}
+  
+library(lubridate)
+#convert character to date format
+admissions.data$date <- ymd(admissions.data$date)
+inflation.data$date <- ymd(inflation.data$date)
+unemployment.data$Month <- ymd(unemployment.data$Month)
+
+#Here is a view of the first rows of our 3 data sets
+head(admissions.data)
+head(inflation.data)
+head(unemployment.data)
+
+```
+
+
+While we have admissions data based on race, for this initiative we have chosen to exclude race from our scope.  As a result, we will limit our dataset to only "total" admissions,  Admissions data will be limited to only those items of interest: Date, Total Admissions
+
+
+```{r}
+#reduce columns in admission data
+admission.slim <- select(admissions.data,date, admissions_total)
+
+```
+
+Inflation data goes back to 1947, however we only have matching prison admissions and unemployment data from January 2013 onward.  As such , we need to reduce the inflation data set to remove years 1947 through December 2012
+
+```{r}
+#Filter data <Dec 2012
+inflation.slim2  <- subset(inflation.data, inflation.data$date > "2012-12-01")
+
+```
+Prison admissions data goes back to 2000, however because we need to account for ALL of the United States, we must have a complete state inventory.  The Prisons admissions data set only contains all states from January 2013 onward.  As such , we need to reduce the admissions data set to remove years 2000 through December 2012.
+
+Additionally, given our admissions data is at the state level of granularity, we need to sum the data, on a per monthly basis, such that we convert it to 'US based' data to align with the inflation and unemployment data sets.
+
+
+```{r}
+#Filter data <Dec 2012
+admission.slim2  <- subset(admission.slim, admission.slim$date > "2012-12-01")
+# compute admissions by month
+admission.slim2$month<-floor_date(admission.slim2$date, "month")
+
+admission.slim3 = admission.slim2%>%
+  group_by(month) %>%
+  summarize(sum = sum(admissions_total))
+
+
+```
+
+Since we only have a complete set of Prison admissions data for entire US from January 2013 onward, we must reduce our unemployment data set to align.  We need to reduce the unemployment data to remove all data prior to December 2012.
+```{r, echo=FALSE}
+
+#Filter data <Dec 2012
+unemployment.slim2  <- subset(unemployment.data, unemployment.data$Month > "2012-12-01")
+
+```
+The column names were updated from abbreviations to names that are more easily understood.
+
+```{r, echo=FALSE}
+
+#Change Column Names 
+
+names(admission.slim3)[names(admission.slim3)=="sum"] <- "Monthly US Admissions"
+names(admission.slim3)[names(admission.slim3)=="month"] <- "Date"
+names(inflation.slim2)[names(inflation.slim2)=="date"] <- "Date"
+names(inflation.slim2)[names(inflation.slim2)=="value"] <- "CPI"
+names(unemployment.slim2)[names(unemployment.slim2)=="Month"] <- "Date"
+names(unemployment.slim2)[names(unemployment.slim2)=="Total"] <- "UnEmployment Rate"
+
+```
+
+Now we can join the three transformed and cleansed data sets into a single data frame using left join based on date.
+
+```{r}
+
+#left join using dlplr based on date
+pop.inf.merge<-left_join(inflation.slim2, admission.slim3, by ='Date')
+pop.inf.unemp<-left_join(pop.inf.merge, unemployment.slim2, by ='Date')
+#displaying first rows of final, cleansed and joined dataset to be used for analysis
+head(pop.inf.unemp)
+```
+
+## Methodology
+
+Lets analyize our dataset using coorelation analyisis.   
+Step 1 will be to check to see if the data is normally distributed.  The most straight forward way to do that is to create a histogram against our 3 independent variables:  US Admissions, unemployment rate and CPI.
+
+```{r}
+
+library(ggplot2)
+#historgram
+Adm.histogram <- hist(pop.inf.unemp$`Monthly US Admissions`, col='steelblue')
+CPI.histogram<-hist(pop.inf.unemp$CPI, col='steelblue')
+UnEmp.histogram<-hist(pop.inf.unemp$'UnEmployment Rate', col='steelblue')
+
+```
+
+A quick view of the distributions of our variables show that they are NOT normally distributed. As a result, we must use a nonparametric measure of the strength and direction of association that exists between unemployment, CPI and admissions as measured on at least an ordinal scale.
+
+The Spearman rank-order correlation coefficient (Spearman’s correlation, for short) will be used.
+
+Given that we are trying to determine the best indicator of increased incarceration, we will analyze both inflation (CPI) and US Unemployment rates independently of one another.
+
+First we analyze US Prision admissons against CPI.  Then we analyze US Prison admissions against unemployment.
+
+Below are the regression lines for each of the scenarios.
+
+_______________________________________
+```{r,echo=TRUE}
+
+#perform Spearman’s correlation agains admissions and CPI
+cor.CPI.result<-cor.test(pop.inf.unemp$`Monthly US Admissions`, pop.inf.unemp$`CPI`, method=c('spearman'))
+
+```
+
+```{r}
+#Loading ggplot2
+  require(ggplot2)
+
+# visualize how a regression line looks like of US Prision admissons against CPI
+  ggplot(pop.inf.unemp, aes(x=pop.inf.unemp$`Monthly US Admissions`, y=pop.inf.unemp$`CPI`)) + geom_point() +
+    geom_smooth(method="lm") + labs(x="US Admissions", y="CPI")
+```
+
+________________________________________
+```{r, echo=TRUE}
+
+#perform Spearman’s correlation against admissions and unemployment
+cor.unemp.result<-cor.test(pop.inf.unemp$'UnEmployment Rate', pop.inf.unemp$'Monthly US Admissions', method=c('spearman'))
+
+```
+
+```{r}
+#Loading ggplot2
+  require(ggplot2)
+
+#visualize how a regression line looks like of US Prision admissons against Unemployment
+  ggplot(pop.inf.unemp, aes(x=pop.inf.unemp$`Monthly US Admissions`, y=pop.inf.unemp$'UnEmployment Rate')) + geom_point() +
+    geom_smooth(method="lm") + labs(x="US Admissions", y="UnEmployment Rate")
+  
+```
+
+## Conclusion
+
+As we look at the relationship between US Prison Admissions and CPI, we see from Spearman’s Correlation analysis that there is a positive, moderate and statistically significant relationship between Monthly US Prison Admissions and CPI (r=53.0%, p-value<0.001). 
+
+This analysis, combined with the regression line in chart X above, leads us to the conclusion that as CPI rises so does the prison admissions rate.  Our hypothesis “H1: Higher (or increasing) inflation rates will cause corresponding incarceration rates in the United States in comparison to periods of lower (or decreasing) inflation rates” is confirmed.
+
+If we turn our focus onto the relationship between US Prison Admissions and US Unemployment rate we again deploy Spearman’s Correlation analysis.  The results indicate that there is a negative, quite strong and statistically significant relationship between US Prison admissions and unemployment rate (r=-75.5%, p-value < 0.001).
+
+This analysis, combined with the regression line in chart Y above, leads us to the conclusion that as unemployment rises, US prison admissions are lower.   Our hypothesis “H2:  Higher (or increasing) unemployment rates will cause corresponding incarceration rates in the United States in comparison to periods of lower (or decreasing) unemployment rates” is NOT confirmed.
+
+
+# References
+
+Banachewicz, K. (2023, June). Prison population in the US, Version 1. Retrieved October 29, 2023 from https://www.kaggle.com/datasets/konradb/prison-population-in-the-us
+
+Narne, P. (2023, August). US Inflation Dataset (1947 - 2023), Version 1. Retrieved October 29, 2023 from https://www.kaggle.com/datasets/pavankrishnanarne/us-inflation-dataset-1947-present
+
+Henderson, H. (2022). “Controlling inflation is crime prevention”, The Hill, Retrieved October    29, 2023 from https://thehill.com/opinion/congress-blog/3721574-controlling-inflation-is-crime-prevention/
+
+United States Department of Labor (2023, November).  "The Employment Situation --October 2023". Retrieved November 28, 2023 from https://www.bls.gov/charts/employment-situation/civilian-unemployment-rate.htm
+
